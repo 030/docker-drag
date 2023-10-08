@@ -1,4 +1,20 @@
 # docker-drag
+
+
+https://python-poetry.org/docs/
+
+curl -sSL https://install.python-poetry.org | python3 - --git https://github.com/python-poetry/poetry.git@master
+
+
+poetry init
+
+poetry run python -V
+
+
+
+
+
+
 This repository contains Python scripts for interacting with Docker Hub or other registries, without needing the Docker client itself.
 
 It relies on the Docker registry [HTTPS API v2](https://docs.docker.com/registry/spec/api/).
