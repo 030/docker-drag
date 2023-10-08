@@ -12,7 +12,14 @@ import urllib3
 urllib3.disable_warnings()
 
 auth_url = 'https://auth.docker.io/token'
+repo = 'library'
 reg_service = 'registry.docker.io'
+repository = ""
+tag = ""
+img = ""
+imgparts = ""
+registry = ""
+
 
 # Get Docker token (this function is useless for unauthenticated registries like Microsoft)
 
@@ -40,8 +47,8 @@ def progress_bar(ublob, nb_traits):
     sys.stdout.flush()
 
 
-def bla(repository, registry, tag, img, imgparts, repo):
-    print("cp1")
+def bla():
+    print("cp1", img, tag)
     # Fetch manifest v2 and get image layer digests
     auth_head = get_auth_head('application/vnd.docker.distribution.manifest.v2+json', repository)
     resp = requests.get('https://{}/v2/{}/manifests/{}'.format(registry,
@@ -172,9 +179,11 @@ def bla(repository, registry, tag, img, imgparts, repo):
     file = open(imgdir + '/repositories', 'w')
     file.write(json.dumps(content))
     file.close()
-
+    print("cp40", repo)
+    print("cp41", img)
     # Create image tar and clean tmp folder
     docker_tar = repo.replace('/', '_') + '_' + img + '.tar'
+    print("cp42", docker_tar)
     sys.stdout.write("Creating archive...")
     sys.stdout.flush()
     tar = tarfile.open(docker_tar, "w")
@@ -184,23 +193,25 @@ def bla(repository, registry, tag, img, imgparts, repo):
     print('\rDocker image pulled: ' + docker_tar)
 
 
-def look_for_docker_image_to_be_downloaded(img, imgparts, repo):
+def look_for_docker_image_to_be_downloaded(img, imgparts):
+    global registry, repository, repo
     # Docker client doesn't seem to consider the first element as a potential registry unless there is a '.' or ':'
     if len(imgparts) > 1 and ('.' in imgparts[0] or ':' in imgparts[0]):
         registry = imgparts[0]
+        print("cp30", registry)
         repo = '/'.join(imgparts[1:-1])
     else:
         registry = 'registry-1.docker.io'
+        print("cp30.0", registry)
         if len(imgparts[:-1]) != 0:
             repo = '/'.join(imgparts[:-1])
         else:
             repo = 'library'
     repository = '{}/{}'.format(repo, img)
-    print(repository)
-    return registry, repository
 
 
-def get_docker_auth_endpoint_if_required(registry):
+def get_docker_auth_endpoint_if_required():
+    global auth_url
     resp = requests.get('https://{}/v2/'.format(registry), verify=False)
     if resp.status_code == 401:
         auth_url = resp.headers['WWW-Authenticate'].split('"')[1]
@@ -208,15 +219,14 @@ def get_docker_auth_endpoint_if_required(registry):
             reg_service = resp.headers['WWW-Authenticate'].split('"')[3]
         except IndexError:
             reg_service = ""
-    return reg_service
 
 
 def main():
+    global tag, img
     if len(sys.argv) != 2:
         print("Usage:\n\tdocker_pull.py [registry/][repository/]image[:tag|@digest]\n")
         exit(1)
 
-    repo = 'library'
     tag = 'latest'
     imgparts = sys.argv[1].split('/')
     try:
@@ -228,11 +238,12 @@ def main():
             img = imgparts[-1]
     print(img, tag)
 
-    reg, repository = look_for_docker_image_to_be_downloaded(img, imgparts, repo)
+    look_for_docker_image_to_be_downloaded(img, imgparts)
+    print("cp0.0.0"+registry)
     print("cp0", repository)
-    reg_service = get_docker_auth_endpoint_if_required(reg)
+    get_docker_auth_endpoint_if_required()
     print("cp0.0")
-    bla(repository, reg, tag, img, imgparts, repository)
+    bla()
 
 
 if __name__ == "__main__":
